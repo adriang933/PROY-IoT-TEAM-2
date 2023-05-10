@@ -1,5 +1,12 @@
+#include "UbidotsEsp32Mqtt.h"
 #define MOTOR_IN1 4
-#define MOTOR_IN2 2     
+#define MOTOR_IN2 2   
+const char *UBIDOTS_TOKEN = "BBFF-BSGQqMO7UC03V97wpFtuZ4qr65zwHi";  // Put here your Ubidots TOKEN
+const char *WIFI_SSID = "Adrian";      // Put here your Wi-Fi SSID
+const char *WIFI_PASS = "Gnarnaird";      // Put here your Wi-Fi password
+const char *DEVICE_LABEL = "parking";   // Put here your Device label to which data  will be published
+const char *VARIABLE_LABEL = "zona1"; // Put here your Variable label to which data  will be published  
+const char *VARIABLE_LABELT = "zona2"; // Put here your Variable label to which data  will be published 
 const int datapin= 32;
 const int datapin2= 35;
 int counter = 0;
@@ -20,6 +27,8 @@ int mylugares_2[4] = {0,0,0,0};
 int pulsos = 0;
 int D_cm = 0; 
 int D_cm2 = 0;
+Ubidots ubidots(UBIDOTS_TOKEN);
+
 void setup() {
   delay(5000);
    Serial.begin(115200);
@@ -28,10 +37,14 @@ void setup() {
    pinMode(MOTOR_IN2, OUTPUT);
    digitalWrite(MOTOR_IN1, inn1);
    digitalWrite(MOTOR_IN2, inn2);
+  ubidots.connectToWifi(WIFI_SSID, WIFI_PASS);
+  ubidots.setup();
+  ubidots.reconnect();
 }
 void loop() {
   if(counterX < 22)
    {
+    publicarxd();
     digitalWrite(MOTOR_IN1, inn1);
     digitalWrite(MOTOR_IN2, inn2);
    }
@@ -39,13 +52,8 @@ void loop() {
   {
      if(counterX < 22)
    {
-    Serial.println(counterX);
     D_cm = distancia(); 
     D_cm2 = distancia2();
-    Serial.print("sección 1: ");
-    Serial.println(D_cm);
-    Serial.print("sección 2: ");
-    Serial.println(D_cm2);
     if(D_cm <= 10)
     {
       mylugares_1[0] = 1;
@@ -60,13 +68,8 @@ void loop() {
     }
    }else if(counterX == 123)
    {
-    Serial.println(counterX);
     D_cm = distancia(); 
     D_cm2 = distancia2();
-    Serial.print("sección 1: ");
-    Serial.println(D_cm);
-    Serial.print("sección 2: ");
-    Serial.println(D_cm2);
     if(D_cm <= 10)
     {
       mylugares_1[1] = 1;
@@ -81,13 +84,8 @@ void loop() {
     }
    }else if(counterX == 240)
    {
-    Serial.println(counterX);
     D_cm = distancia(); 
     D_cm2 = distancia2();
-    Serial.print("sección 1: ");
-    Serial.println(D_cm);
-    Serial.print("sección 2: ");
-    Serial.println(D_cm2);
     if(D_cm <= 10)
     {
       mylugares_1[2] = 1;
@@ -102,13 +100,8 @@ void loop() {
     }
    }else if(counterX == 360)
    {
-    Serial.println(counterX);
     D_cm = distancia(); 
     D_cm2 = distancia2();
-    Serial.print("sección 1: ");
-    Serial.println(D_cm);
-    Serial.print("sección 2: ");
-    Serial.println(D_cm2);
     if(D_cm <= 10)
     {
       mylugares_1[3] = 1;
@@ -151,7 +144,6 @@ void boton (){
       counterX = 0;
       inn1 = !inn1;
       inn2 = !inn2;
-      delay(1000);
      Serial.print("sección 1: ");
      Serial.println(mylugares_1[0]);
      Serial.println(mylugares_1[1]);
@@ -162,7 +154,28 @@ void boton (){
      Serial.println(mylugares_2[1]);
      Serial.println(mylugares_2[2]);
      Serial.println(mylugares_2[3]);
+      delay(700);
       cambio = !cambio;
    }
 
+ }
+
+ void publicarxd(){
+    if (!ubidots.connected())
+  {
+    ubidots.reconnect();
+  }
+    float capacity = 0;
+    float capacity2 = 0;
+    for(int i = 0; i < 4; i = i+1)
+    {
+      capacity = capacity + mylugares_1[i];
+      capacity2 = capacity2 + mylugares_2[i];
+    }
+    capacity = capacity/4;
+    capacity2 = capacity2/4;
+    ubidots.add(VARIABLE_LABEL, capacity); // Insert your variable Labels and the value to be sent
+    ubidots.add(VARIABLE_LABELT, capacity2); // Insert your variable Labels and the value to be 
+    ubidots.publish(DEVICE_LABEL);
+  ubidots.loop();
  }
